@@ -14,6 +14,8 @@ const AUTHINFO = {
     PWD: '123456'
 }
 
+const PORT = 8888;
+
 const proxyServer = net.createServer()
 proxyServer.on('connection', clientSocket => {
 
@@ -30,7 +32,7 @@ proxyServer.on('connection', clientSocket => {
         const ver = parseInt(data[0], 10);
         if (ver !== 5) {
             console.log('Do not Support The Version', ver);
-            clientSocket.destoryed || sock.destory();
+            clientSocket.destoryed || clientSocket.destory();
             return false;
         }
         const methods = data.slice(2);
@@ -99,8 +101,8 @@ proxyServer.on('connection', clientSocket => {
 
 })
 
-proxyServer.listen('8888', () => {
-    console.log('Start listenin ...');
+proxyServer.listen(PORT, () => {
+    console.log(`Start listening ${PORT} ...`);
 })
 
 proxyServer.on('error', err => {
