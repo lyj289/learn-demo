@@ -7,6 +7,13 @@ function number() {
     console.log(num);
 }
 
+function copy() {
+    let arr = [1, 187];
+    let buffer = Buffer.from(arr);
+    let copyBuffer = Buffer.allocUnsafe(buffer.length);
+    buffer.copy(copyBuffer);
+    console.log(copyBuffer);
+}
 function string() {
     let arr = 'hello world'
     let buffer = Buffer.from(arr);
@@ -42,4 +49,4 @@ function readFile() {
     });
 }
 
-string()
+copy()
