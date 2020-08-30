@@ -3,16 +3,16 @@ var client = new net.Socket();
 
 
 function clientWrite() {
-  client.write(`GET / HTTP/1.0\nConnection: keep-alive\n\n`);
+  client.write(`GET / HTTP/1.1\nConnection: keep-alive\n\n`);
 }
 
 function clientWrite2() {
-    client.write(`GET / HTTP/1.0
+    client.write(`GET / HTTP/1.1
 Connection: keep-alive\n\n`);
 }
 
 function clientWrite3() {
-    client.write(`GET / HTTP/1.0
+    client.write(`GET / HTTP/1.1
 Connection: keep-alive
 
 `);
