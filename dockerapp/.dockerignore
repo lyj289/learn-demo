@@ -1,0 +1,4 @@
+# The git directory for core is huge, and we don't need it for containers
+.git/
+.dockerignore
+Dockerfile

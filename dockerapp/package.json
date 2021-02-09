@@ -1,0 +1,25 @@
+{
+  "name": "suzhou-converter",
+  "version": "1.0.0",
+  "description": "suzhou China Mobile converter",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "async": "^3.2.0",
+    "bent": "^7.3.12",
+    "bezier-intersect": "^0.0.3",
+    "got": "^11.8.1",
+    "jsts": "^2.5.1",
+    "kdbush": "^3.0.0",
+    "log4js": "^6.3.0",
+    "lowdb": "^1.0.0",
+    "regression": "^2.0.1",
+    "request": "^2.88.2",
+    "three": "^0.120.1",
+    "wgs2mars": "^2.0.0"
+  }
+}
