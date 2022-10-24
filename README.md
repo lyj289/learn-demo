@@ -5,4 +5,5 @@ Some Learn demo
 - buffer in node.js
 - UDP in node.js
 - TCP/UDP in Shell
-- Http in Shell
+- Http in
+- GCJ02 charts

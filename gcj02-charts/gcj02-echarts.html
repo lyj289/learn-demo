@@ -1,0 +1,123 @@
+<!--
+	此示例下载自 https://echarts.apache.org/examples/zh/editor.html?c=line-function
+-->
+<!DOCTYPE html>
+<html lang="zh-CN" style="height: 100%">
+<head>
+  <meta charset="utf-8">
+    <title>WGS84 to Gcj02 charts - echart</title>
+</head>
+<body style="height: 100%; margin: 0">
+  <div id="container" style="height: 100%"></div>
+  <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts@5.4.0/dist/echarts.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/coordtransform@2.1.2/index.js"></script>
+
+  <script type="text/javascript">
+    var dom = document.getElementById('container');
+    var myChart = echarts.init(dom, null, {
+      renderer: 'canvas',
+      useDirtyRect: false
+    });
+    var app = {};
+
+    var option;
+
+    const startLng = 110;
+    const endLng = 130;
+
+    function generateData(x) {
+      const count = 500;
+      let data = [];
+
+      for (var i = 0; i < count; i++) {
+          const lat = 40;
+
+          const lng = startLng + (endLng - startLng)/count * i;
+
+          const gcjLatLng = coordtransform.wgs84togcj02(lng, lat);
+
+          // const lat2 = (gcjLatLng[1] - 40) * 1000 + 40;
+          const lat2 = gcjLatLng[1];
+
+          data.push([gcjLatLng[0], lat2]);
+      }
+
+      console.log(data);
+      return data;
+    }
+
+    const lineData = generateData();
+
+    // Get lat of gcj02
+    const lats = lineData.map(v => v[1]);
+
+    const sortedLats = lats.sort();
+
+    const minLat = sortedLats[0];
+    const maxLat = sortedLats[sortedLats.length - 1];
+
+    option = {
+      animation: false,
+      grid: {
+        top: 40,
+        left: 50,
+        right: 40,
+        bottom: 50
+      },
+      xAxis: {
+        name: 'x',
+        minorTick: {
+          show: true
+        },
+        minorSplitLine: {
+          show: true
+        }
+      },
+      yAxis: {
+        name: 'y',
+        min: -100,
+        max: 100,
+        minorTick: {
+          show: true
+        },
+        minorSplitLine: {
+          show: true
+        }
+      },
+      dataZoom: [
+        {
+          show: true,
+          type: 'inside',
+          filterMode: 'none',
+          xAxisIndex: [0],
+          startValue: startLng,
+          endValue: endLng
+        },
+        {
+          show: true,
+          type: 'inside',
+          filterMode: 'none',
+          yAxisIndex: [0],
+          startValue: minLat,
+          endValue: maxLat
+        }
+      ],
+      series: [
+        {
+          type: 'line',
+          showSymbol: false,
+          clip: true,
+          data: lineData
+        }
+      ]
+    };
+
+    if (option && typeof option === 'object') {
+      myChart.setOption(option);
+    }
+
+    window.addEventListener('resize', myChart.resize);
+  </script>
+</body>
+</html>

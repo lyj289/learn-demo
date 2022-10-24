@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base target="_top" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>WGS84 to Gcj02 charts - plotly</title>
+
+    <script src="https://cdn.plot.ly/plotly-2.14.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/coordtransform@2.1.2/index.js"></script>
+
+  </head>
+  <body>
+    <div id="myDiv"></div>
+    <script>
+      var trace1 = {
+        x: [],
+        y: [],
+        type: 'gcj02'
+      };
+
+      var trace2 = {
+        x: [],
+        y: [],
+        type: 'wgs84'
+      };
+      const startLng = 110;
+      const endLng = 130;
+
+      const count = 500;
+
+      function generateData(x) {
+        for (var i = 0; i < count; i++) {
+            const lat = 40;
+
+            const lng = startLng + (endLng - startLng)/count * i;
+
+            const [gcjLon, gcjLat] = coordtransform.wgs84togcj02(lng, lat);
+
+            // const lat2 = (gcjLatLng[1] - 40) * 1000 + 40;
+
+            trace1.x.push(gcjLon);
+            trace1.y.push(gcjLat);
+
+            trace2.x.push(lng);
+            trace2.y.push(lat);
+        }
+
+      }
+
+      generateData();
+      var data = [trace1, trace2];
+      Plotly.newPlot('myDiv', data);
+    </script>
+  </body>
+</html>
