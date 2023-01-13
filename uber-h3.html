@@ -1,0 +1,172 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Uber H3 Geo tutorial - Leaflet</title>
+
+  <link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+    <script src="https://unpkg.com/h3-js"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    .leaflet-container {
+      height: 100%;
+      width: 100%;
+      max-width: 100%;
+      max-height: 100%;
+    }
+  </style>
+
+
+</head>
+<body>
+
+<div id='map'></div>
+
+<script>
+  // https://github.com/uber/geojson2h3/blob/master/src/geojson2h3.js
+  // https://observablehq.com/@nrabinowitz/h3-indexes-cartesian-vs-spherical?collection=@nrabinowitz/h3
+  const map = L.map('map').setView([39.74739, -105], 13);
+
+  const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  }).addTo(map);
+
+  function onEachFeature(feature, layer) {
+    let popupContent = `<p> ${layer.options.id}</p>`;
+    layer.bindPopup(popupContent);
+  }
+
+  var cellPolygonGroup = L.layerGroup().addTo(map);
+
+  function addH3Cell(h3Index) {
+    // addCell(h3Index)
+    addCell(h3.cellToParent(h3Index, 6), 'green');
+
+    // Get the center of the hexagon
+    const hexCenterCoordinates = h3.cellToLatLng(h3Index);
+
+    // Add the neighbor cells, include h3index itself
+    const disk = h3.gridDisk(h3Index, 1);
+    addCells(disk)
+
+    // Another get neighbor
+    addCells(h3.originToDirectedEdges(h3Index).map(h3.getDirectedEdgeDestination), 'red')
+
+
+    // Add outline polygon
+    const coordinates = h3.cellsToMultiPolygon(disk, true);
+    // coordinates.forEach(v => {
+    //   addPolygon(v, 'blue');
+    // })
+
+    // Add children cellss
+    const childrenIndex = h3.cellToChildren(h3Index, 10);
+    // addCells(childrenIndex, 'green');
+
+    // Add center child cell
+    const centerChildIndex = h3.cellToCenterChild(h3Index, 8);
+    // addCell(centerChildIndex, 'red');
+
+    // Polygon equal with cell
+    L.marker(h3.vertexToLatLng(h3Index)).addTo(map)
+    // addCell(h3.cellToVertex(h3Index, 0), 'blue');
+    // addCells(h3.cellToVertexes(h3Index), 'blue');
+  }
+
+  function addCells(h3Indexs, color) {
+    h3Indexs.forEach(v=>{
+      addCell(v, color)
+    })
+  }
+
+  function addCell(h3Index, color) {
+    const hexBoundary = h3.cellToBoundary(h3Index, true);
+    addPolygon([hexBoundary], color, h3Index);
+  }
+
+
+  function addPolygon(points, color = "#ff7800", id = 0) {
+    var h3Pologon = [{
+      "type": "Polygon",
+      "coordinates": points
+    }];
+
+    var myStyle = {
+      "color": color,
+      "fill": color,
+      "opacity": 0.65
+    };
+
+    var layer = L.geoJSON(h3Pologon, {
+        style: myStyle,
+        id: id,
+        onEachFeature
+    })
+    cellPolygonGroup.addLayer(layer);
+  }
+
+  const h3Index = h3.latLngToCell(39.74739, -105, 7);
+  console.log('h3index', h3Index);
+  addH3Cell(h3Index)
+
+  h3.getPentagons(6).forEach(v => {
+    const disk = h3.gridDisk(v, 1);
+    addCells(disk)
+  })
+  // addCells(h3.getRes0Cells())
+
+  var edge = h3.cellsToDirectedEdge('87268cda3ffffff','87268cd85ffffff');
+  addCell(edge, 'yellow') // polygon equal with 87268cda3ffffff
+  // Edge polyline
+  L.polyline(h3.directedEdgeToBoundary(edge)).addTo(map)
+
+  const polygonPoints = [
+      [
+        [
+          -107.98447387946229,
+          42.359243575449625
+        ],
+        [
+          -107.98447387946229,
+          35.65812531269647
+        ],
+        [
+          -93.72506417626852,
+          35.65812531269647
+        ],
+        [
+          -93.72506417626852,
+          42.359243575449625
+        ],
+        [
+          -107.98447387946229,
+          42.359243575449625
+        ]
+      ]
+    ];
+
+  const cells1 = h3.polygonToCells(polygonPoints, 4, true);
+  const cells2 = h3.compactCells(cells1);
+  console.log(cells1.length, cells2.length);
+  addCells(cells2);
+
+
+  // H3 Index has different types:Cell, Edge, Vertex, while with same boundaries
+  // H3 level : 0 - 15
+
+
+</script>
+
+</body>
+</html>
