@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Different converter methods from Ecef to lla</title>
+  </head>
+  <body>
+    <script>
+      const WGS84_EarthModel = {
+        a: 6378137.0, //长半径,单位m
+        b: 6356752.3142451795, //短半径
+        f: 1 / 298.257223563, //扁率
+      };
+
+      function LatlngaltCartesianTransform() {
+        // Nothing for now, pure static functions
+      }
+      LatlngaltCartesianTransform.kDegreesToRadians = Math.PI / 180;
+      LatlngaltCartesianTransform.kRadiansToDegrees = 180 / Math.PI;
+      LatlngaltCartesianTransform.init = function () {
+        // Earth Ellipsoid Parameters (equatorial radius and ellipsoid flattening)
+        // 1984 World Geodetic System (WGS84)
+        // https://en.wikipedia.org/wiki/World_Geodetic_System
+        // https://en.wikipedia.org/wiki/Earth_radius#cite_note-tr8350_2-11
+        // sphere model uses long axis in ellipsoid
+        // b = a * (1 - f)
+        // const kEllipsoid_b = 6356752.3142;
+        // const kEllipsoid_b = kEllipsoid_a * (1.0 - kEllipsoidFlatteningWgs84);
+        // const kEllipsoid_a_div_b = kEllipsoid_a / kEllipsoid_b;
+
+        let a = 6378137;
+        let b = 6356752.31;
+        let flattening = 1.0 / 298.257223563;
+        // const kEllipsoid_b = kEllipsoid_a * (1.0 - kEllipsoidFlatteningWgs84);
+        let f0 = (1 - flattening) * (1 - flattening);
+        let h = (((a - b) / (a + b)) * (a - b)) / (a + b);
+
+        let e_square = (a * a - b * b) / (a * a);
+        LatlngaltCartesianTransform.ellipsoid = {
+          kEllipsoid_a: a,
+          a: a,
+          b: b,
+          f: flattening,
+          kEllipsoidFlatteningWgs84: flattening,
+          kEllipsoid_b_div_a_square: (b * b) / (a * a),
+          kEllipsoid_e_square: e_square,
+          // e: Math.sqrt(e_square),
+          kEllipsoid_f0: f0,
+          kEllipsoid_f1: 1 - f0,
+          Ellipsoid_f2: 1 / f0 - 1,
+
+          e_square: (a * a - b * b) / (a * a),
+          // e_prime: Math.sqrt((a * a - b * b) / (b * b)),
+          e_prime_square: (a * a - b * b) / (b * b),
+          // b_div_a_sq: b / a * b / a,
+          h: h,
+        };
+      };
+
+      LatlngaltCartesianTransform.init();
+
+      LatlngaltCartesianTransform.ECEFTranslationToLatLngAltEllipsoidal =
+        function (xyz) {
+          const a = LatlngaltCartesianTransform.ellipsoid.a;
+          const b = LatlngaltCartesianTransform.ellipsoid.b;
+          const e_square = LatlngaltCartesianTransform.ellipsoid.e_square;
+          const e_prime_square =
+            LatlngaltCartesianTransform.ellipsoid.e_prime_square;
+          const X = xyz[0];
+          const Y = xyz[1];
+          const Z = xyz[2];
+          const p = Math.sqrt(X * X + Y * Y);
+          const theta = Math.atan((Z * a) / p / b);
+          const sin_theta_cubic =
+            Math.sin(theta) * Math.sin(theta) * Math.sin(theta);
+          const cos_theta_cubic =
+            Math.cos(theta) * Math.cos(theta) * Math.cos(theta);
+          let lng = Math.atan2(Y, X);
+          let lat = Math.atan(
+            (Z + e_prime_square * b * sin_theta_cubic) /
+              (p - e_square * a * cos_theta_cubic)
+          );
+          const N = a / Math.sqrt(1 - e_square * Math.sin(lat) * Math.sin(lat));
+          let alt = p / Math.cos(lat) - N;
+          lng = lng * LatlngaltCartesianTransform.kRadiansToDegrees;
+          lat = lat * LatlngaltCartesianTransform.kRadiansToDegrees;
+          return { lat, lng, alt };
+        };
+
+      // http://www.sysense.com/products/ecef_lla_converter/converter.js
+      /**
+       Converts from LLA (latdeg, londeg, m) to ECEF (m, m, m)
+      */
+      function lla2ecef(lng, lat, alt) {
+        var lat = (lat * Math.PI) / 180.0;
+        var lon = (lng * Math.PI) / 180.0;
+        var alt = alt;
+
+        var xyz = [0, 0, 0]; // output
+
+        var A = WGS84_EarthModel.a; // earth semimajor axis in meters
+        var F = WGS84_EarthModel.f; // reciprocal flattening
+        var E2 = 2 * F - F * F; // eccentricity squared
+
+        var chi = Math.sqrt(1 - E2 * Math.sin(lat) * Math.sin(lat));
+
+        xyz[0] = (A / chi + alt) * Math.cos(lat) * Math.cos(lon);
+        xyz[1] = (A / chi + alt) * Math.cos(lat) * Math.sin(lon);
+        xyz[2] = ((A * (1.0 - E2)) / chi + alt) * Math.sin(lat);
+
+        return xyz;
+      }
+
+      /**
+       Converts from ECEF (m, m, m) to LLA (deg, deg, m)
+      */
+      function ecef2lla(xyz) {
+        var x = xyz[0];
+        var y = xyz[1];
+        var z = xyz[2];
+        var lla = [0, 0, 0];
+
+        var A = WGS84_EarthModel.a;
+        var B = WGS84_EarthModel.b;
+        var E_ECC = 0.0818191;
+
+        var P = Math.sqrt(x * x + y * y);
+        var THETA = Math.atan((z * A) / (P * B));
+        var sint3 = Math.sin(THETA) * Math.sin(THETA) * Math.sin(THETA);
+        var cost3 = Math.cos(THETA) * Math.cos(THETA) * Math.cos(THETA);
+
+        var numlat = z + ((A * A - B * B) / B) * sint3;
+        var denlat = P - E_ECC * E_ECC * A * cost3;
+        var Lat = Math.atan(numlat / denlat);
+        var Lon = Math.atan2(y, x);
+
+        var Ntemp = 1 - E_ECC * E_ECC * Math.sin(Lat) * Math.sin(Lat);
+
+        var N = 0;
+        if (Ntemp < 0.0) N = A;
+        else N = A / Math.sqrt(Ntemp);
+
+        var Altitude = P / Math.cos(Lat) - N;
+
+        lla[0] = (Lat * 180.0) / Math.PI;
+        lla[1] = (Lon * 180.0) / Math.PI;
+        lla[2] = Altitude;
+
+        return lla;
+      }
+
+      // 对ecef2lla3的自定义升级版本
+      function ecef2lla2(xyz) {
+        var square = (num) => num * num;
+        let d2r = Math.PI / 180;
+        let r2d = 180 / Math.PI;
+
+        let X = xyz[0];
+        let Y = xyz[1];
+        let Z = xyz[2];
+        let x2y2 = square(X) + square(Y);
+        let e2 =
+          (square(WGS84_EarthModel.a) - square(WGS84_EarthModel.b)) /
+          square(WGS84_EarthModel.a);
+
+        //使用迭代算法来计算B的值，先求出B的初值B0
+        let B0 = Math.atan(Z / Math.sqrt(x2y2));
+        let loopCount = 0;
+        while (true) {
+          var N = WGS84_EarthModel.a / Math.sqrt(1 - e2 * square(Math.sin(B0)));
+          var H = Z / Math.sin(B0) - N * (1 - e2);
+          let B1 = Math.atan((Z + N * e2 * Math.sin(B0)) / Math.sqrt(x2y2));
+          if (Math.abs(B1 - B0) <= 0.000000000001 || loopCount > 100) {
+            break;
+          }
+          B0 = B1;
+          loopCount++;
+        }
+        console.log('ecef2lla2 loop count ', loopCount);
+
+        let L = Math.atan2(Y, X);
+
+        return { lng: L * r2d, lat: B0 * r2d, alt: H };
+      }
+
+      // https://blog.csdn.net/ReBeX/article/details/120857104
+      function ecef2lla3(xyz) {
+        var square = (num) => num * num;
+        let d2r = Math.PI / 180;
+        let r2d = 180 / Math.PI;
+
+        let X = xyz[0];
+        let Y = xyz[1];
+        let Z = xyz[2];
+        let x2y2 = square(X) + square(Y);
+        let e2 =
+          (square(WGS84_EarthModel.a) - square(WGS84_EarthModel.b)) /
+          square(WGS84_EarthModel.a);
+
+        //使用迭代算法来计算B的值，先求出B的初值B0
+        let B0 = Math.atan(Z / Math.sqrt(x2y2) + 1);
+        let B1 = Math.atan(Z / Math.sqrt(x2y2));
+        let loopCount = 0;
+        while (Math.abs(B1 - B0) >= 0.000000000001) {
+          B0 = B1;
+          var N = WGS84_EarthModel.a / Math.sqrt(1 - e2 * square(Math.sin(B0)));
+          var H = Z / Math.sin(B0) - N * (1 - e2);
+          B1 = Math.atan((Z + N * e2 * Math.sin(B0)) / Math.sqrt(x2y2));
+          loopCount++;
+        }
+        console.log('ecef2lla3 loop count ', loopCount);
+        let L = Math.atan2(Y, X);
+
+        return { lng: L * r2d, lat: B1 * r2d, alt: H };
+      }
+
+      console.log('Origin lon, lat, alt: ', 115, 35, 1000);
+      const xyz0 = lla2ecef(115, 35, 1000);
+      console.log('lla2ecef', xyz0);
+      console.log('ecef2lla', ecef2lla(xyz0));
+      console.log('ecef2lla2', ecef2lla2(xyz0));
+      console.log('ecef2lla3', ecef2lla3(xyz0));
+
+      console.log(
+        'Deepmap ecef2lla',
+        LatlngaltCartesianTransform.ECEFTranslationToLatLngAltEllipsoidal(xyz0)
+      );
+    </script>
+  </body>
+</html>
