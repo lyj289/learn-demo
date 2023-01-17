@@ -6,6 +6,7 @@
     <title>Different converter methods from Ecef to lla</title>
   </head>
   <body>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.101/Build/Cesium/Cesium.js"></script>
     <script>
       var square = (num) => num * num;
 
@@ -228,6 +229,26 @@
         'Deepmap ecef2lla',
         LatlngaltCartesianTransform.ECEFTranslationToLatLngAltEllipsoidal(xyz0)
       );
+
+      function useCesim() {
+        const origin = Cesium.Cartesian3.fromDegrees(115, 35, 1000);
+        console.log(origin);
+
+        // In RADIANS
+        console.log(Cesium.Cartographic.fromCartesian(origin));
+
+        let enr2ffTransforms = Cesium.Transforms.eastNorthUpToFixedFrame(origin)
+
+        // ENU 2 world
+        let result1 = Cesium.Matrix4.multiplyByPoint(enr2ffTransforms, new Cesium.Cartesian3(0, 0, 0),  new Cesium.Cartesian3())
+
+        console.log(result1)
+
+        // world 2 ENU
+        let enr2ffTransformsInverse = Cesium.Matrix4.inverseTransformation(enr2ffTransforms, new Cesium.Matrix4())
+        Cesium.Matrix4.multiplyByPoint(enr2ffTransformsInverse, result1,new Cesium.Cartesian3())
+      }
+
     </script>
   </body>
 </html>
