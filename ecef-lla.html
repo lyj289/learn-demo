@@ -7,11 +7,17 @@
   </head>
   <body>
     <script>
+      var square = (num) => num * num;
+
       const WGS84_EarthModel = {
         a: 6378137.0, //长半径,单位m
         b: 6356752.3142451795, //短半径
         f: 1 / 298.257223563, //扁率
       };
+
+      WGS84_EarthModel.e2 =
+          (square(WGS84_EarthModel.a) - square(WGS84_EarthModel.b)) /
+          square(WGS84_EarthModel.a);
 
       function LatlngaltCartesianTransform() {
         // Nothing for now, pure static functions
@@ -30,7 +36,7 @@
         // const kEllipsoid_a_div_b = kEllipsoid_a / kEllipsoid_b;
 
         let a = 6378137;
-        let b = 6356752.31;
+        let b = 6356752.3142451795;
         let flattening = 1.0 / 298.257223563;
         // const kEllipsoid_b = kEllipsoid_a * (1.0 - kEllipsoidFlatteningWgs84);
         let f0 = (1 - flattening) * (1 - flattening);
@@ -160,9 +166,7 @@
         let Y = xyz[1];
         let Z = xyz[2];
         let x2y2 = square(X) + square(Y);
-        let e2 =
-          (square(WGS84_EarthModel.a) - square(WGS84_EarthModel.b)) /
-          square(WGS84_EarthModel.a);
+        let e2 = WGS84_EarthModel.e2;
 
         //使用迭代算法来计算B的值，先求出B的初值B0
         let B0 = Math.atan(Z / Math.sqrt(x2y2));
@@ -194,9 +198,7 @@
         let Y = xyz[1];
         let Z = xyz[2];
         let x2y2 = square(X) + square(Y);
-        let e2 =
-          (square(WGS84_EarthModel.a) - square(WGS84_EarthModel.b)) /
-          square(WGS84_EarthModel.a);
+        let e2 = WGS84_EarthModel.e2;
 
         //使用迭代算法来计算B的值，先求出B的初值B0
         let B0 = Math.atan(Z / Math.sqrt(x2y2) + 1);
