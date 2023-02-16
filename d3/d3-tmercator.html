@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.title {
+  font: bold 16px "Helvetica Neue";
+  text-transform: capitalize;
+}
+
+.graticule {
+  fill: none;
+  stroke: #999;
+  stroke-width: .5px;
+}
+
+.resample {
+  stroke: #f00;
+  stroke-width: 1.5px;
+  fill: none;
+}
+.map path {
+  fill: #87B687;
+  stroke: #777;
+}
+
+.projection-center {
+  fill: red;
+}
+
+.graticule path {
+  fill: none;
+  stroke: #eee;
+}
+
+.circles path {
+  fill: none;
+  stroke: #aaa;
+}
+
+
+</style>
+<body>
+  <svg width="900px" height="500px">
+    <g class="graticule"><path></path></g>
+    <g class="circles"></g>
+    <g class="map"></g>
+    <circle class="projection-center" r="4"></circle>
+  </svg>
+
+<script src="http://d3js.org/d3.v6.js"></script>
+<script>
+
+
+let geojson;
+let projectionTypes = [
+  'AzimuthalEqualArea',
+  'AzimuthalEquidistant',
+  'Gnomonic',
+  'Orthographic',
+  'Stereographic',
+  'Albers',
+  'ConicConformal',
+  'ConicEqualArea',
+  'ConicEquidistant',
+  'Equirectangular',
+  'Mercator',
+  'TransverseMercator'
+];
+
+let projection;
+let geoGenerator = d3.geoPath()
+  .projection(projection);
+
+let graticule = d3.geoGraticule();
+
+let circles = [
+  [-135, 0], [-90, 0], [-45, 0], [0, 0], [45, 0], [90, 0], [135, 0], [180, 0],
+  [0, -70], [0, -35], [0, 35], [0, 70],
+  [180, -70], [180, -35], [180, 35], [180, 70],
+];
+let geoCircle = d3.geoCircle().radius(10).precision(1);
+
+let state = {
+  type: 'TransverseMercator',
+  scale: 120,
+  translateX: 450,
+  translateY: 250,
+  centerLon: 0,
+  centerLat: 0,
+  rotateLambda: -115,
+  rotatePhi: 0,
+  rotateGamma: 0
+}
+
+
+function update() {
+  // Update projection
+  projection = d3['geo' + state.type]()
+  geoGenerator.projection(projection);
+
+  projection
+    .center([state.centerLon, state.centerLat])
+    .scale(state.scale)
+    .translate([state.translateX, state.translateY])
+    .rotate([state.rotateLambda, state.rotatePhi, state.rotateGamma])
+    .precision(0.1)
+
+  // Update world map
+  let u = d3.select('g.map')
+    .selectAll('path')
+    .data(geojson.features)
+
+  u.enter()
+    .append('path')
+    .merge(u)
+    .attr('d', geoGenerator)
+
+  // Update projection center
+  let projectedCenter = projection([state.centerLon, state.centerLat]);
+  d3.select('.projection-center')
+    .attr('cx', projectedCenter[0])
+    .attr('cy', projectedCenter[1]);
+
+  // Update graticule
+  d3.select('.graticule path')
+    .datum(graticule())
+    .attr('d', geoGenerator);
+
+  // Update circles
+  u = d3.select('.circles')
+    .selectAll('path')
+    .data(circles.map(function(d) {
+      geoCircle.center(d);
+      return geoCircle();
+    }));
+
+  u.enter()
+    .append('path')
+    .merge(u)
+    .attr('d', geoGenerator);
+}
+
+var start = Date.now();
+function draw() {
+  state.rotateLambda = (Date.now() - start) * .003;
+  // dt = 40
+  // projection.rotate([velocity * dt, 0, 89]);
+  update();
+}
+
+
+d3.json('https://gist.githubusercontent.com/d3indepth/f28e1c3a99ea6d84986f35ac8646fac7/raw/c58cede8dab4673c91a3db702d50f7447b373d98/ne_110m_land.json')
+  .then(function(json) {
+    geojson = json;
+    update();
+    // d3.timer(draw);
+  });
+
+
+
+
+</script>
+</body>
